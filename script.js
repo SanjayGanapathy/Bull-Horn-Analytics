@@ -9,6 +9,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentDateTime = document.getElementById('current-date-time');
     const addProductFab = document.getElementById('add-product-fab');
     const closeDayBtn = document.getElementById('close-day-btn'); // Opens receipt modal
+    // 1) Grab UI elements
+const authModal    = document.getElementById("auth-modal");
+const authForm     = document.getElementById("auth-form");
+const authTitle    = document.getElementById("auth-title");
+const authSubmit   = document.getElementById("auth-submit");
+const authToggle   = document.getElementById("auth-toggle");
+const logoutBtn    = document.getElementById("logout-btn");
+
+// 2) Show login at startup
+fb.onAuth(fb.auth, user => {
+  if (user) {
+    authModal.close();
+    logoutBtn.style.display = "block";
+    startRealtimeListeners(user.uid);
+  } else {
+    logoutBtn.style.display = "none";
+    openModal(authModal);
+  }
+});
+
+// 3) Handle sign-in / sign-up toggle
+let isSignUp = false;
+authToggle.onclick = () => {
+  isSignUp = !isSignUp;
+  authTitle.textContent    = isSignUp ? "Create Account" : "Sign In";
+  authSubmit.textContent   = isSignUp ? "Sign Up"       : "Sign In";
+  authToggle.textContent   = isSignUp ? "Have account? Sign In" : "No account? Create one";
+};
+
+// 4) Process form
+authForm.onsubmit = async e => {
+  e.preventDefault();
+  const email = document.getElementById("auth-email").value;
+  const pass  = document.getElementById("auth-pass").value;
+  try {
+    if (isSignUp) await fb.signUp(email, pass);
+    else          await fb.signIn(email, pass);
+  } catch(err) {
+    alert(err.message);
+  }
+};
+
+// 5) Logout
+logoutBtn.onclick = () => {
+  fb.signOut();
+};
+
+let productsCol, salesCol, unsubProducts, unsubSales;
+
+function startRealtimeListeners(uid) {
+  // Collections under each user
+  productsCol = collection(fb.db, "users", uid, "products");
+  salesCol    = collection(fb.db, "users", uid, "sales");
+
+  // 4a) Listen for product changes
+  if (unsubProducts) unsubProducts();  // clear old listener
+  unsubProducts = onSnapshot(productsCol, snapshot => {
+    // clear UI
+    productGrid.innerHTML = "";
+    // apply all documents
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      storeProductDetails({ id: docSnap.id, ...data });
+      renderProductTile({ id: docSnap.id, ...data });
+    });
+  });
+
+  // 4b) Listen for sales changes
+  if (unsubSales) unsubSales();
+  // order by timestamp so you can see “previous days”
+  const salesQuery = query(salesCol, orderBy("timestamp"));
+  unsubSales = onSnapshot(salesQuery, snapshot => {
+    salesHistory = [];
+    snapshot.forEach(docSnap => {
+      const s = docSnap.data();
+      s.timestamp = s.timestamp.toDate(); // Firestore Timestamp → JS Date
+      salesHistory.push(s);
+    });
+    generateTrackingVisuals();
+  });
+}
+
+// 5) Whenever you add/update a product, **write** to Firestore instead of only local:
+async function handleAddProduct(e) {
+  e.preventDefault();
+  // … your existing validation …
+  const newProduct = { name, price, cost, stock };
+  await addDoc(productsCol, newProduct);
+  closeModal(addProductModal);
+}
+
+// 6) For stock updates:
+async function handleUpdateStock(e) {
+  e.preventDefault();
+  const id      = document.getElementById("update-stock-product-id").value;
+  const newStock= parseInt(document.getElementById("update-stock-quantity").value, 10);
+  await updateDoc(doc(productsCol, id), { stock: newStock });
+  closeModal(updateStockModal);
+}
+
+// 7) For completing a sale:
+async function handleCompleteSale() {
+  if (!currentOrder.length) return showTemporaryFeedback("Order is empty","error");
+  // same in-memory stock update & rendering…
+  // then record the sale to Firestore:
+  const saleDoc = {
+    items: currentOrder.map(i=>({ id:i.id, name:i.name, price:i.price, quantity:i.quantity, cost: i.cost })),
+    total: parseFloat(orderTotalAmount.textContent),
+    timestamp: new Date()
+  };
+  await addDoc(salesCol, saleDoc);
+  // Firestore listener will pick it up, clear local order, and re-render
+}
 
     // Modals
     const addProductModal = document.getElementById('add-product-modal');
