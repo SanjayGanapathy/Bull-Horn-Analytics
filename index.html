@@ -7,15 +7,58 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, addDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+  
+    // 1️⃣ Your Firebase config (from Firebase console)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBMCZTFPvWu6GOVgpEhsTHmXiPHOhw6XbE",
+        authDomain: "bull-horn-analytics.firebaseapp.com",
+        projectId: "bull-horn-analytics",
+        storageBucket: "bull-horn-analytics.firebasestorage.app",
+        messagingSenderId: "251081918247",
+        appId: "1:251081918247:web:8c2b0000044dffc1548b02"
+    };
+    const app   = initializeApp(firebaseConfig);
+    const auth  = getAuth(app);
+    const db    = getFirestore(app);
+  
+    // Make these available on window for script.js to consume:
+    window.fb = { auth, db, 
+      // Auth helpers
+      signIn: (email,pw)=> signInWithEmailAndPassword(auth,email,pw),
+      signUp: (e,p)=> createUserWithEmailAndPassword(auth,e,p),
+      signOut: ()=> signOut(auth),
+      onAuth: onAuthStateChanged
+    };
+  </script>
+  
 </head>
 <body data-theme="light">
+    <h2 id="auth-title">Sign In</h2>
+  <form id="auth-form">
+    <label for="auth-email">Email:</label>
+    <input type="email" id="auth-email" required />
 
+    <label for="auth-pass">Password:</label>
+    <input type="password" id="auth-pass" required />
+
+    <div class="modal-actions">
+      <button type="submit" id="auth-submit">Sign In</button>
+      <button type="button" id="auth-toggle">Create Account</button>
+    </div>
+  </form>
+      
     <div class="pos-container">
         <header class="top-bar">
             <h1 class="business-name">Bull Horn Analytics</h1>
             <div class="date-time" id="current-date-time">Loading...</div>
             <div class="top-bar-controls">
                 <button id="theme-toggle-btn">Toggle Theme</button>
+                <button id="login-btn">Sign In</button>
                 <button id="close-day-btn">Close Day</button> </div>
         </header>
 
