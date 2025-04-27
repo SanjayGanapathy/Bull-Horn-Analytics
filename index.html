@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bull Horn Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-theme="light">
+
+    <div class="pos-container">
+        <header class="top-bar">
+            <h1 class="business-name">Bull Horn Analytics</h1>
+            <div class="date-time" id="current-date-time">Loading...</div>
+            <div class="top-bar-controls">
+                <button id="theme-toggle-btn">Toggle Theme</button>
+                <button id="close-day-btn">Close Day</button> </div>
+        </header>
+
+        <main class="main-body">
+             <div class="main-tabs">
+                 <button class="tab-link active" data-tab="pos-view">Point of Sale</button>
+                 <button class="tab-link" data-tab="tracking-view">Tracking</button>
+             </div>
+
+             <div id="pos-view" class="tab-content active">
+                <div class="product-grid" id="product-grid">
+                  <!-- Product tiles will be injected here dynamically -->
+                </div>
+              </div>
+              
+
+             <div id="tracking-view" class="tab-content">
+                 <h2>Sales Analytics</h2>
+                 <div class="tracking-grid">
+                     <div class="chart-container">
+                         <h3>Sales by Product (Revenue)</h3>
+                         <canvas id="salesPieChart"></canvas>
+                     </div>
+                     <div class="chart-container">
+                         <h3>Sales Trend (Total Revenue Over Time)</h3>
+                         <canvas id="salesLineChart"></canvas>
+                     </div>
+                     <div class="table-container">
+                         <h3>Top Selling Products (by Quantity)</h3>
+                         <table id="topProductsTable">
+                             <thead>
+                                 <tr>
+                                     <th>Product</th>
+                                     <th>Quantity Sold</th>
+                                     <th>Total Revenue</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 </tbody>
+                         </table>
+                     </div>
+                     <div class="kpi-container">
+                         <h3>Key Metrics</h3>
+                         <p>Total Sales Recorded: <span id="metric-total-sales">0</span></p>
+                         <p>Total Revenue: $<span id="metric-total-revenue">0.00</span></p>
+                         <p>Average Sale Value: $<span id="metric-avg-sale">0.00</span></p>
+                         </div>
+                 </div>
+             </div>
+        </main>
+
+        <aside class="order-summary-drawer" id="order-summary-drawer">
+            <h2>Current Order</h2>
+            <ul class="order-items" id="order-items">
+                </ul>
+            <div class="order-total">
+                <strong>Total: $<span id="order-total-amount">0.00</span></strong>
+            </div>
+            <button class="complete-sale-btn" id="complete-sale-btn">Complete Sale</button>
+             <button class="toggle-drawer-btn" id="toggle-drawer-btn-close">Close</button>
+        </aside>
+         <button class="toggle-drawer-btn" id="toggle-drawer-btn-open">🛒 View Order</button>
+
+
+        <button class="fab" id="add-product-fab">+</button>
+
+        <footer class="footer">
+            <div class="profit-loss-snapshot">
+                    <span>Sales Today (via Tracking): $<span id="footer-total-sales">0.00</span></span>
+                </div>
+            <div class="alerts">  
+        </footer>
+    </div>
+
+    <dialog class="modal" id="add-product-modal">
+        <h2>Add New Product</h2>
+        <form id="add-product-form">
+            <label for="product-name">Name:</label>
+            <input type="text" id="product-name" name="product-name" required>
+
+            <label for="product-price">Price ($):</label>
+            <input type="number" id="product-price" name="product-price" step="0.01" min="0" required>
+
+            <label for="product-cost">Cost ($):</label>
+            <input type="number" id="product-cost" name="product-cost" step="0.01" min="0" required>
+
+            <label for="product-stock">Initial Stock:</label>
+            <input type="number" id="product-stock" name="product-stock" step="1" min="0" required>
+
+            <div class="modal-actions">
+                <button type="submit">Save Product</button>
+                <button type="button" class="close-modal-btn" data-modal-id="add-product-modal">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="modal" id="update-stock-modal">
+        <h2 id="update-stock-product-name">Update Stock</h2>
+         <form id="update-stock-form">
+            <input type="hidden" id="update-stock-product-id">
+            <label for="update-stock-quantity">New Stock Quantity:</label>
+            <input type="number" id="update-stock-quantity" name="update-stock-quantity" step="1" min="0" required>
+
+            <div class="modal-actions">
+                <button type="submit">Update Stock</button>
+                <button type="button" class="close-modal-btn" data-modal-id="update-stock-modal">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="modal" id="daily-receipt-modal">
+        <h2>End of Day Summary</h2>
+        <div id="daily-receipt-content">
+            </div>
+         <div class="modal-actions">
+             <button>Export CSV</button> <button>Print</button> <button type="button" class="close-modal-btn" data-modal-id="daily-receipt-modal">Close</button>
+        </div>
+    </dialog>
+
+    <dialog class="modal" id="quantity-modal">
+         <h2 id="quantity-product-name">Enter Quantity</h2>
+         <form id="quantity-form">
+             <input type="hidden" id="quantity-product-id">
+             <input type="hidden" id="quantity-product-price">
+             <input type="hidden" id="quantity-product-stock">
+            <label for="quantity-input">Quantity:</label>
+            <input type="number" id="quantity-input" name="quantity-input" step="1" min="1" value="1" required>
+            <div class="modal-actions">
+                <button type="submit">Add to Order</button>
+                <button type="button" class="close-modal-btn" data-modal-id="quantity-modal">Cancel</button>
+            </div>
+         </form>
+    </dialog>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
